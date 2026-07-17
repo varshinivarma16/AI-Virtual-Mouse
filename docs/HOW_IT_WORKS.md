@@ -390,3 +390,146 @@ Documented from reading the source — worth knowing before you go hunting:
 * **`MouseController._prev` is passed as the scroll position**, i.e. the last
   *smoothed cursor* spot. On Windows it's ignored anyway (SendInput injects at the
   real cursor); on Mac/Linux pyautogui scrolls at that coordinate.
+
+---
+
+## Appendix: Plain-English walkthrough
+
+The sections above are for changing the code. This appendix explains a few core
+steps in everyday language, for anyone reading the code for the first time.
+
+### `cap.read()` — grab one photo from the webcam
+
+A video is just many photos shown quickly one after another. Each single photo is a
+**frame**. `cap.read()` means *"take one photo from the camera right now."* Every
+time the loop runs, it does this to get the latest picture of your hand.
+
+```python
+ok, frame = cap.read()
+```
+
+It hands back two things:
+
+* **`ok`** — a yes/no answer: did the camera give us a photo? `True` = yes,
+  `False` = something went wrong (camera busy, unplugged, or still warming up).
+* **`frame`** — the actual photo, as a grid of coloured pixels.
+
+The loop checks `ok` because cameras normally fail for a split second when they
+start up. Rather than crash on the first failure, it counts how many failures
+happen in a row and only gives up after a long outage (see §2, Step 1).
+
+### `find_hands()` — figure out where the hand is in the photo
+
+A photo is just coloured dots; the computer doesn't know where your fingers are.
+[`HandTracker.find_hands()`](../tracking/hand_tracker.py) is the step that looks at
+the photo and works out where each part of your hand is. It hands the photo to
+**MediaPipe** (Google's hand-detection tool), which is the "smart friend" that
+actually spots the hand. In order:
+
+1. **Fix the colours.** OpenCV stores colours as Blue-Green-Red, but MediaPipe
+   expects Red-Green-Blue, so the photo is re-ordered first
+   (`cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)`). Same picture, correct colour order.
+2. **Find the hand.** `self._hands.process(rgb)` scans the photo and, if it sees a
+   hand, returns **21 points** — one for each key spot (fingertips, knuckles,
+   wrist). These are the *landmarks*.
+3. **Check something was found.** If no hand is in the photo, it just returns an
+   empty list and the rest of the app does nothing this frame.
+4. **Convert to pixels.** MediaPipe reports positions as fractions (e.g. `0.5` =
+   halfway across). The code multiplies by the image width/height to get real
+   pixel positions the app can use — `0.5 × 640 = 320px from the left`. It does this
+   for all 21 points and bundles them into one `HandLandmarks`.
+5. **Note left or right.** MediaPipe also says whether it's a `"Left"` or `"Right"`
+   hand, and that label is saved too.
+6. **Draw the skeleton.** As a **side effect**, it draws the dots-and-lines
+   skeleton onto the photo so you can watch the tracking live in the preview
+   window. This is just for your eyes — it doesn't change any tracking data.
+
+One sentence: *`find_hands()` takes a raw photo, asks MediaPipe to spot the 21
+points of your hand, converts them into pixel positions the app can use, and draws
+the skeleton so you can see it working.* It's also the **only** file that touches
+MediaPipe, so swapping in a different detector later would change just this one
+file (see the note at the top of `hand_tracker.py`).
+
+### `PINCH_START` — the moment thumb and index touch
+
+`PINCH_START` is the single instant your thumb and index finger *first* meet. The
+[`PinchDetector`](../recognition/pinch_detector.py) watches the gap between the two
+fingertips; the frame that gap first closes past the threshold, it emits one
+`PINCH_START`. A `self._start is None` check makes it fire **once** on the
+open→closed transition, not every frame you keep holding (those become
+`PINCH_HOLD`). The [`ActionEngine`](../action/action_engine.py) is the only place
+that gives it meaning: `PINCH_START → LEFT_CLICK`. So pinching is a click — holding
+does nothing, and two quick pinches become a double-click (see §5).
+
+### `GestureEngine.process()` — decide what the hand is doing
+
+By now the app knows *where* your hand is (the 21 points). It still doesn't know
+*what the hand is doing* — pointing? pinching? scrolling? holding up a palm?
+[`GestureEngine.process()`](../recognition/gesture_engine.py) decides on **one**
+answer per frame: a `GestureEvent`.
+
+Picture a panel of judges, each an expert on **one** gesture. They all look at the
+hand at the same time, and each says *"yes, that's my gesture"* or *"no, not
+mine."* The judges are the detectors, held in **priority order** (highest first):
+
+```python
+self.detectors = [
+    FingerScrollDetector(),   # peace-sign scroll
+    HoldDetector(),           # open-palm hold
+    PinchDetector(),          # thumb+index pinch
+    MoveDetector(),           # pointing / move
+]
+```
+
+The loop asks each judge in turn and keeps the **first** "yes":
+
+```python
+for detector in self.detectors:
+    event = detector.detect(hands, ctx)
+    if event is not None and winner is None:
+        winner = event
+return winner if winner is not None else GestureEvent(Gesture.IDLE)
+```
+
+* Each `detect()` returns a `GestureEvent` (*"yes"*) or `None` (*"no"*).
+* `winner is None` means *once we have a winner, don't overwrite it* — so the
+  highest-priority "yes" wins. That's why pinch beats move: a click never gets
+  stolen by cursor movement.
+* If nobody says yes, it returns `Gesture.IDLE` — "hand's there, nothing's
+  happening." So the result is **always exactly one event**: one winner, or `IDLE`.
+
+**The clever part:** even after a winner is found, the loop keeps calling `detect()`
+on the losing judges — it just ignores their answers. Each detector has an internal
+memory (when the pinch began, the last cursor spot, where a swipe started). Skipping
+a loser would let its memory go stale, so when it *did* win a later frame it would
+"wake up" with wrong data and glitch. Rule of thumb: *every judge watches every
+frame to stay fresh, but only the top "yes" counts.*
+
+### `ActionEngine.process()` — decide what the gesture *means*
+
+The gesture engine says *what the hand is doing* (`PINCH_START`, `SCROLL`, …). It
+deliberately knows nothing about mice. Turning that into *what the computer should
+do* is a separate job, and [`ActionEngine.process()`](../action/action_engine.py)
+is the single place it happens. It takes the winning `GestureEvent` and returns an
+`ActionCommand` — or `None` if the gesture means nothing right now.
+
+Keeping this split in its own layer is what lets you remap a gesture (say, make a
+pinch play music instead of click) by editing **one** file. The full mapping:
+
+* **`MOVE` → move the cursor.** A straight pass-through, carrying the target point.
+* **`PINCH_START` → left click**, but only `if self._can_click(now)`. The engine
+  remembers the time of the last click (`self._last_click`) and ignores pinches
+  that arrive within `CLICK_DEBOUNCE` seconds — a **debounce** that stops one pinch
+  from registering as a burst of clicks. (The debounce is deliberately short so two
+  *intentional* quick pinches still become an OS double-click — see §5.)
+* **`SCROLL` → scroll**, with two decisions made here: a `value == 0` scroll means
+  "pose held but not moving," so it returns `None` (nothing for the OS to do); and
+  the *direction* the page moves (natural vs reversed) is decided here, not in the
+  detector, via `SCROLL_NATURAL`.
+* **`PALM_HOLD` → play/pause media.**
+* **Anything else → `None`.** For example `PINCH_HOLD` and `PINCH_END` fall through
+  to the end and return `None`, which is exactly why pinching is click-only.
+
+Returning `None` is normal and frequent — it simply means "this frame produces no
+action." Only when `process()` returns a real `ActionCommand` does the next step
+(the `MouseController`) actually move, click, or scroll the real mouse.

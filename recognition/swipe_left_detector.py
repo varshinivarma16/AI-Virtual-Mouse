@@ -2,9 +2,11 @@
 SwipeLeftDetector: index + middle held horizontal, pointing LEFT -> "Back".
 
 The pose is a sideways peace sign: index and middle fingers extended and aimed to
-the left of the screen, with the ring and pinky curled in. It's the horizontal
-cousin of the scroll pose (index+middle *up*), so the two never both match - one is
-vertical, the other horizontal.
+the left of the screen. The ring and pinky just have to NOT also point left (they
+can be curled or sticking up). It's the horizontal cousin of the scroll pose
+(index+middle *up*), so the two never both match - one is vertical, the other
+horizontal. The "pointing left" test keys on the index/middle *direction*, which is
+what separates it from the rock sign and scroll (both point up).
 
 Like HoldDetector, the pose must be HELD for `SWIPE_HOLD_TIME` before it fires, so
 a split-second flash of horizontal fingers doesn't trigger Back. It then fires ONCE
@@ -79,12 +81,14 @@ class SwipeLeftDetector(BaseDetector):
         if not (points_left(_INDEX) and points_left(_MIDDLE)):
             return False
 
-        # Ring & pinky must be curled in, or a flat hand aimed left would also match.
-        def curled(finger) -> bool:
-            dx, dy = _vec(hand, *finger)
-            return (dx * dx + dy * dy) ** 0.5 < config.SWIPE_CURL_MAX * palm
+        # Ring & pinky must NOT also be aimed left, or a flat open hand pointing left
+        # would match too. They're free to be curled OR sticking up - only a finger
+        # extended left as far as the pointing ones disqualifies the pose.
+        def not_pointing_left(finger) -> bool:
+            dx, _ = _vec(hand, *finger)
+            return dx > -config.SWIPE_MIN_EXTEND * palm
 
-        return curled(_RING) and curled(_PINKY)
+        return not_pointing_left(_RING) and not_pointing_left(_PINKY)
 
     def reset(self):
         self._start = None

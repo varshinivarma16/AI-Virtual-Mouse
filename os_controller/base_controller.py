@@ -53,6 +53,12 @@ class BaseOSController:
     def media_play_pause(self):
         pyautogui.press("playpause")  # global media key: pauses/plays videos
 
+    # -- navigation --------------------------------------------------------
+    def navigate_back(self):
+        # Alt+Left is "Back" in browsers and file explorers on Windows and Linux.
+        # macOS uses a different shortcut - see MacController.
+        pyautogui.hotkey("alt", "left")
+
     # -- drag (button held down across moves) ------------------------------
     def mouse_down(self):
         self._mouse.press(Button.left)

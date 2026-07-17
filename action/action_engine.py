@@ -9,6 +9,7 @@ purely about hand shape.
   SCROLL (two fingers swiped)     -> SCROLL        pass-through with payload
   MOVE                            -> pass-through with payload
   PALM_HOLD (open hand)           -> MEDIA_PLAY_PAUSE  (pause/play the video)
+  SWIPE_LEFT (two fingers <-)      -> NAVIGATE_BACK     (OS Back; fires once per pose)
 """
 
 from typing import Optional
@@ -51,6 +52,13 @@ class ActionEngine:
 
         if g == Gesture.PALM_HOLD:
             return ActionCommand(Action.MEDIA_PLAY_PAUSE)
+
+        if g == Gesture.SWIPE_LEFT:
+            # value == 0.0 means the pose is held but already fired; the detector
+            # sends it to keep the hand, but there's nothing more to do.
+            if event.value == 0.0:
+                return None
+            return ActionCommand(Action.NAVIGATE_BACK)
 
         return None
 

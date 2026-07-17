@@ -82,6 +82,8 @@ class MouseController:
             self._scroll(cmd.amount * config.SCROLL_MULTIPLIER)
         elif a == Action.MEDIA_PLAY_PAUSE:
             self.os.media_play_pause()
+        elif a == Action.NAVIGATE_BACK:
+            self.os.navigate_back()
         elif a == Action.DRAG_START:
             self.os.move_to(*self._place(cmd.point))
             self.os.mouse_down()

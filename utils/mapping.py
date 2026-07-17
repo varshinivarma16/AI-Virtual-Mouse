@@ -23,7 +23,8 @@ class CoordinateMapper:
 
     def to_screen(self, point):
         x, y = point
-        mx, my = config.FRAME_MARGIN_X, config.FRAME_MARGIN_Y
-        sx = np.interp(x, (mx, self.cam_w - mx), (0, self.screen_w))
-        sy = np.interp(y, (my, self.cam_h - my), (0, self.screen_h))
+        left, right = config.FRAME_MARGIN_LEFT, config.FRAME_MARGIN_RIGHT
+        top, bottom = config.FRAME_MARGIN_TOP, config.FRAME_MARGIN_BOTTOM
+        sx = np.interp(x, (left, self.cam_w - right), (0, self.screen_w))
+        sy = np.interp(y, (top, self.cam_h - bottom), (0, self.screen_h))
         return clamp(sx, 0, self.screen_w - 1), clamp(sy, 0, self.screen_h - 1)

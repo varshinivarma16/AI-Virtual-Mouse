@@ -11,8 +11,8 @@ def draw_overlay(frame, gesture: str, paused: bool, fps: float, fingers=None, n_
     if config.SHOW_REGION:
         cv2.rectangle(
             frame,
-            (config.FRAME_MARGIN_X, config.FRAME_MARGIN_Y),
-            (w - config.FRAME_MARGIN_X, h - config.FRAME_MARGIN_Y),
+            (config.FRAME_MARGIN_LEFT, config.FRAME_MARGIN_TOP),
+            (w - config.FRAME_MARGIN_RIGHT, h - config.FRAME_MARGIN_BOTTOM),
             (255, 0, 255),
             2,
         )

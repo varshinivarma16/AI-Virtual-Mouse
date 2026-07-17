@@ -32,8 +32,15 @@ TRACKING_CONFIDENCE = 0.6
 # ---------------------------------------------------------------------------
 # Active frame region -> screen mapping (pixel margins from each camera edge)
 # ---------------------------------------------------------------------------
-FRAME_MARGIN_X = 90
-FRAME_MARGIN_Y = 60
+# The magenta box is the active region: it maps onto the whole screen. Each edge
+# has its OWN margin, so you can move the box to wherever your hand rests, not just
+# the centre. Smaller margin = that edge sits closer to the frame border.
+#   - Hand rests LOW?  -> big TOP, tiny BOTTOM (box sits low, current setup).
+#   - Hand rests high? -> tiny TOP, big BOTTOM.
+FRAME_MARGIN_LEFT = 80
+FRAME_MARGIN_RIGHT = 80
+FRAME_MARGIN_TOP = 100
+FRAME_MARGIN_BOTTOM = 10
 
 # ---------------------------------------------------------------------------
 # Cursor movement / smoothing

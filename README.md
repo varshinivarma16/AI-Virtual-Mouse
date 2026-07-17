@@ -6,6 +6,10 @@ all with your hand.
 
 ## Architecture
 
+> For a full walkthrough of the internals — the life of a frame, why each detector
+> is written the way it is, and the tuning/extension guide — see
+> **[docs/HOW_IT_WORKS.md](docs/HOW_IT_WORKS.md)**.
+
 The project is built as a one-directional pipeline with each concern in its own layer:
 
 ```

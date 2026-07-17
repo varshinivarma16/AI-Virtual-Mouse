@@ -47,11 +47,26 @@ def main():
     log.info("virtual mouse started - press 'q' in the window to quit")
 
     try:
+        misses = 0
         while True:
             ok, frame = cap.read()
             if not ok:
-                log.warning("failed to read frame from camera")
-                break
+                # Webcams routinely drop a frame or two while warming up, and a USB
+                # camera can blip mid-session. Quitting on the first miss turns that
+                # into "the app won't start", so only give up on a sustained outage.
+                misses += 1
+                if misses >= config.CAMERA_MAX_MISSES:
+                    log.error(
+                        "camera gave no frames for %d tries - is another app using it, "
+                        "or is CAM_INDEX (%s) wrong?",
+                        misses,
+                        config.CAM_INDEX,
+                    )
+                    break
+                log.warning("failed to read frame from camera (%d)", misses)
+                cv2.waitKey(30)  # let the camera settle, and keep the UI responsive
+                continue
+            misses = 0
             frame = cv2.flip(frame, 1)  # mirror so movement feels natural
             frame = pipeline.process(frame)
             cv2.imshow(config.WINDOW_NAME, frame)

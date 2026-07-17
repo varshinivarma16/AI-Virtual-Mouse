@@ -6,7 +6,7 @@ music instead of clicking). It owns the click debounce, so the detectors can sta
 purely about hand shape.
 
   PINCH_START (thumb+index)       -> LEFT_CLICK   (click only; no drag)
-  SCROLL (two fingers up)         -> SCROLL        pass-through with payload
+  SCROLL (two fingers swiped)     -> SCROLL        pass-through with payload
   MOVE                            -> pass-through with payload
   PALM_HOLD (open hand)           -> MEDIA_PLAY_PAUSE  (pause/play the video)
 """
@@ -40,7 +40,14 @@ class ActionEngine:
             return ActionCommand(Action.LEFT_CLICK)
 
         if g == Gesture.SCROLL:
-            return ActionCommand(Action.SCROLL, amount=event.value)
+            # value == 0 means the scroll pose is held but still. The detector sends
+            # it to keep ownership of the hand; there's nothing for the OS to do.
+            if event.value == 0.0:
+                return None
+            # The detector reports where the HAND went (+ = up). Which way the PAGE
+            # should go is a meaning decision, so it's made here.
+            amount = -event.value if config.SCROLL_NATURAL else event.value
+            return ActionCommand(Action.SCROLL, amount=amount)
 
         if g == Gesture.PALM_HOLD:
             return ActionCommand(Action.MEDIA_PLAY_PAUSE)

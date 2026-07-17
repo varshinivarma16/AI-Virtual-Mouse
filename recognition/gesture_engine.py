@@ -18,14 +18,24 @@ from recognition.move_detector import MoveDetector
 from recognition.pinch_detector import PinchDetector
 from recognition.finger_scroll_detector import FingerScrollDetector
 from recognition.swipe_left_detector import SwipeLeftDetector
+from recognition.fist_detector import FistDetector
+from recognition.tab_switch_detector import TabSwitchDetector
 
 
 class GestureEngine:
     def __init__(self):
-        # Highest priority first. SwipeLeft is a distinct static pose (fingers
-        # horizontal), so it can sit above the pointer gestures without stealing
-        # from scroll (fingers vertical) or the pinch.
+        # Highest priority first. TabSwitch is first so that once a switch is open
+        # it owns the hand until it commits - otherwise relaxing the hand curls it
+        # through a fist, FistDetector would win that frame and swallow TAB_COMMIT,
+        # and Alt would be left stuck down. It stays quiet (returns None) whenever no
+        # switch is active, so the fist guarantee below is unaffected. FistDetector
+        # is next so a closed hand strictly blocks every other gesture (notably a
+        # stray pinch-click). The pointer gestures follow; none of their poses
+        # overlap (fist = all curled, tab = index+pinky up, swipe = fingers
+        # horizontal, scroll = fingers up).
         self.detectors = [
+            TabSwitchDetector(),
+            FistDetector(),
             SwipeLeftDetector(),
             FingerScrollDetector(),
             HoldDetector(),

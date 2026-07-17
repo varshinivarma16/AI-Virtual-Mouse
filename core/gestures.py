@@ -31,6 +31,12 @@ class Gesture(Enum):
     SWIPE_LEFT = auto()         # index+middle held horizontal, pointing left ->
                                 # value = 1.0 on the frame it forms, 0.0 while held
                                 # (edge-triggered; the action layer navigates back)
+    # --- Alt+Tab window switcher (rock sign 🤘: index+pinky up) ---------------
+    TAB_OPEN = auto()           # rock pose held -> open the switcher (Alt down + Tab)
+    TAB_NEXT = auto()           # swipe right while it's open -> highlight next window
+    TAB_PREV = auto()           # swipe left while it's open  -> highlight previous window
+    TAB_COMMIT = auto()         # pose dropped -> release Alt (select highlighted window)
+    TAB_HOLD = auto()           # switcher open but hand idle -> own the hand, no action
 
 
 class Action(Enum):
@@ -45,6 +51,10 @@ class Action(Enum):
     DRAG_END = auto()
     MEDIA_PLAY_PAUSE = auto()   # press the OS media key (pause/play a video)
     NAVIGATE_BACK = auto()      # OS "Back" (Alt+Left / Cmd+[): browser, file explorer
+    ALT_TAB_OPEN = auto()       # press Alt (held) + Tab: open the window switcher
+    ALT_TAB_NEXT = auto()       # Tab while Alt held: highlight the next window
+    ALT_TAB_PREV = auto()       # Shift+Tab while Alt held: highlight the previous window
+    ALT_TAB_COMMIT = auto()     # release Alt: bring the highlighted window to front
 
 
 @dataclass

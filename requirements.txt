@@ -1,0 +1,6 @@
+opencv-python
+mediapipe==0.10.14   # pinned: 0.10.35 dropped the legacy mp.solutions.hands API this app uses
+pyautogui
+pynput
+numpy
+screeninfo

@@ -10,6 +10,7 @@ purely about hand shape.
   MOVE                            -> pass-through with payload
   PALM_HOLD (open hand)           -> MEDIA_PLAY_PAUSE  (pause/play the video)
   SWIPE_LEFT (two fingers <-)      -> NAVIGATE_BACK     (OS Back; fires once per pose)
+  TAB_OPEN/NEXT/PREV/COMMIT (rock) -> ALT_TAB_*         (held window switcher)
 """
 
 from typing import Optional
@@ -59,6 +60,17 @@ class ActionEngine:
             if event.value == 0.0:
                 return None
             return ActionCommand(Action.NAVIGATE_BACK)
+
+        # Alt+Tab window switcher. TAB_HOLD only exists to keep the hand while the
+        # switcher is open/arming, so it maps to nothing.
+        if g == Gesture.TAB_OPEN:
+            return ActionCommand(Action.ALT_TAB_OPEN)
+        if g == Gesture.TAB_NEXT:
+            return ActionCommand(Action.ALT_TAB_NEXT)
+        if g == Gesture.TAB_PREV:
+            return ActionCommand(Action.ALT_TAB_PREV)
+        if g == Gesture.TAB_COMMIT:
+            return ActionCommand(Action.ALT_TAB_COMMIT)
 
         return None
 

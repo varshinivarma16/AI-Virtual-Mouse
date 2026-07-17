@@ -84,6 +84,14 @@ class MouseController:
             self.os.media_play_pause()
         elif a == Action.NAVIGATE_BACK:
             self.os.navigate_back()
+        elif a == Action.ALT_TAB_OPEN:
+            self.os.alt_tab_open()
+        elif a == Action.ALT_TAB_NEXT:
+            self.os.alt_tab_next()
+        elif a == Action.ALT_TAB_PREV:
+            self.os.alt_tab_prev()
+        elif a == Action.ALT_TAB_COMMIT:
+            self.os.alt_tab_commit()
         elif a == Action.DRAG_START:
             self.os.move_to(*self._place(cmd.point))
             self.os.mouse_down()
@@ -95,5 +103,10 @@ class MouseController:
         self._log.debug("executed %s", a.name)
 
     def release_all(self):
-        """Safety: make sure the mouse button isn't stuck down on pause/exit."""
+        """Safety: make sure nothing is left held down on pause/exit.
+
+        A stuck Alt key from an interrupted switch would wreck every keystroke after
+        it, so releasing the switcher modifier here is as important as the mouse.
+        """
         self.os.mouse_up()
+        self.os.alt_tab_commit()

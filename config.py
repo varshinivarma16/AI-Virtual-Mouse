@@ -73,6 +73,12 @@ SCROLL_MULTIPLIER = 1          # overall gain on the result (raise = faster)
 SWIPE_MIN_EXTEND = 0.55    # index/middle tip must be this far LEFT of its knuckle to count as pointing left
 SWIPE_MAX_VERTICAL = 0.8   # |vertical|/|horizontal| below this = the finger is horizontal, not up/down
 SWIPE_CURL_MAX = 0.75      # ring & pinky tip within this of their knuckle = curled (keeps a flat open hand out)
+SWIPE_HOLD_TIME = 0.5      # seconds the pose must be held before Back fires (stops a split-second flash from triggering)
+
+# ---------------------------------------------------------------------------
+# Fist (all fingers closed) -> strictly no action
+# ---------------------------------------------------------------------------
+FIST_CURL_MAX = 0.6        # every fingertip within this * palm of its knuckle = a fist; blocks all gestures (incl. a stray pinch-click)
 
 # ---------------------------------------------------------------------------
 # Paths

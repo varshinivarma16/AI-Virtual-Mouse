@@ -6,10 +6,11 @@ the left of the screen, with the ring and pinky curled in. It's the horizontal
 cousin of the scroll pose (index+middle *up*), so the two never both match - one is
 vertical, the other horizontal.
 
-Edge-triggered, like HoldDetector: it fires ONCE the frame the pose forms, then
-stays quiet until you drop the pose - otherwise a held hand would fire Back every
-frame. While the pose is held it keeps returning a zero-value event so it *owns*
-the hand (a None here would fall through to pinch/move and misfire).
+Like HoldDetector, the pose must be HELD for `SWIPE_HOLD_TIME` before it fires, so
+a split-second flash of horizontal fingers doesn't trigger Back. It then fires ONCE
+and stays quiet until you drop the pose. Throughout (both the wait and after firing)
+it returns a zero-value event so it *owns* the hand - a None here would fall through
+to pinch/move and misfire.
 
 Everything is measured RELATIVE TO THE PALM (`palm_size()`), not in pixels, so the
 thresholds hold whether your hand is near the camera or an arm's length back.
@@ -37,7 +38,8 @@ def _vec(hand: HandLandmarks, tip_id: int, mcp_id: int):
 
 class SwipeLeftDetector(BaseDetector):
     def __init__(self):
-        self._fired = False  # already fired for the current hold?
+        self._start = None   # when the current pose began, or None
+        self._fired = False  # already fired for this hold?
 
     def detect(self, hands: List[HandLandmarks], ctx: DetectContext) -> Optional[GestureEvent]:
         if len(hands) != 1:
@@ -49,8 +51,13 @@ class SwipeLeftDetector(BaseDetector):
             self.reset()
             return None
 
-        # Pose held: own the hand so the frame doesn't fall through to pinch/move.
-        if self._fired:
+        if self._start is None:
+            self._start = ctx.now  # first frame of the pose: start the clock
+
+        # Own the hand for the whole pose (waiting or already fired) so the frame
+        # doesn't fall through to pinch/move and misfire.
+        held_long_enough = (ctx.now - self._start) >= config.SWIPE_HOLD_TIME
+        if self._fired or not held_long_enough:
             return GestureEvent(Gesture.SWIPE_LEFT, value=0.0, hand_label=hand.label)
 
         self._fired = True
@@ -80,4 +87,5 @@ class SwipeLeftDetector(BaseDetector):
         return curled(_RING) and curled(_PINKY)
 
     def reset(self):
+        self._start = None
         self._fired = False  # dropping the pose re-arms the next Back

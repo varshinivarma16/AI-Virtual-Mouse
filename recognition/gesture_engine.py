@@ -18,14 +18,17 @@ from recognition.move_detector import MoveDetector
 from recognition.pinch_detector import PinchDetector
 from recognition.finger_scroll_detector import FingerScrollDetector
 from recognition.swipe_left_detector import SwipeLeftDetector
+from recognition.fist_detector import FistDetector
 
 
 class GestureEngine:
     def __init__(self):
-        # Highest priority first. SwipeLeft is a distinct static pose (fingers
-        # horizontal), so it can sit above the pointer gestures without stealing
-        # from scroll (fingers vertical) or the pinch.
+        # Highest priority first. FistDetector is first so a closed hand strictly
+        # blocks every other gesture (notably a stray pinch-click). SwipeLeft is a
+        # distinct static pose (fingers horizontal), so it can sit above the pointer
+        # gestures without stealing from scroll (fingers vertical) or the pinch.
         self.detectors = [
+            FistDetector(),
             SwipeLeftDetector(),
             FingerScrollDetector(),
             HoldDetector(),

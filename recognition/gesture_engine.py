@@ -17,12 +17,16 @@ from recognition.hold_detector import HoldDetector
 from recognition.move_detector import MoveDetector
 from recognition.pinch_detector import PinchDetector
 from recognition.finger_scroll_detector import FingerScrollDetector
+from recognition.swipe_left_detector import SwipeLeftDetector
 
 
 class GestureEngine:
     def __init__(self):
-        # Highest priority first.
+        # Highest priority first. SwipeLeft is a distinct static pose (fingers
+        # horizontal), so it can sit above the pointer gestures without stealing
+        # from scroll (fingers vertical) or the pinch.
         self.detectors = [
+            SwipeLeftDetector(),
             FingerScrollDetector(),
             HoldDetector(),
             PinchDetector(),

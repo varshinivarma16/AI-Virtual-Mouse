@@ -28,6 +28,9 @@ class Gesture(Enum):
                                 # value = notches of HAND travel, signed (+ = hand up).
                                 # The action layer decides which way the page moves.
     PALM_HOLD = auto()          # open hand (four fingers up) held -> pause the video
+    SWIPE_LEFT = auto()         # index+middle held horizontal, pointing left ->
+                                # value = 1.0 on the frame it forms, 0.0 while held
+                                # (edge-triggered; the action layer navigates back)
 
 
 class Action(Enum):
@@ -41,6 +44,7 @@ class Action(Enum):
     DRAG_MOVE = auto()
     DRAG_END = auto()
     MEDIA_PLAY_PAUSE = auto()   # press the OS media key (pause/play a video)
+    NAVIGATE_BACK = auto()      # OS "Back" (Alt+Left / Cmd+[): browser, file explorer
 
 
 @dataclass

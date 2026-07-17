@@ -67,6 +67,14 @@ SCROLL_PIXELS_PER_NOTCH = 12.0 # px of hand travel per wheel notch (lower = more
 SCROLL_MULTIPLIER = 1          # overall gain on the result (raise = faster)
 
 # ---------------------------------------------------------------------------
+# "Back" gesture (index + middle held horizontal, pointing left)
+# ---------------------------------------------------------------------------
+# All palm-relative (fractions of wrist->knuckle span) so they hold at any distance.
+SWIPE_MIN_EXTEND = 0.55    # index/middle tip must be this far LEFT of its knuckle to count as pointing left
+SWIPE_MAX_VERTICAL = 0.8   # |vertical|/|horizontal| below this = the finger is horizontal, not up/down
+SWIPE_CURL_MAX = 0.75      # ring & pinky tip within this of their knuckle = curled (keeps a flat open hand out)
+
+# ---------------------------------------------------------------------------
 # Paths
 # ---------------------------------------------------------------------------
 _ROOT = os.path.dirname(__file__)

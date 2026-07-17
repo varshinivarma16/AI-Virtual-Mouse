@@ -82,9 +82,26 @@ class TabSwitchDetector(BaseDetector):
 
     @staticmethod
     def _is_rock(hand: HandLandmarks) -> bool:
-        f = hand.fingers_up()
-        # index + pinky up, middle down. Ring ignored (unreliable), thumb ignored.
-        return bool(f[1] and f[4] and not f[2])
+        # Fully geometric, NOT fingers_up() - that assumes an upright hand and returns
+        # scrambled results on a sideways hand, which is exactly how the horizontal
+        # "back" pose used to leak through as a rock sign. Instead:
+        #   * index & pinky point UP  (tip clearly above its knuckle)
+        #   * middle is CURLED in     (tip close to its knuckle)
+        # The back pose fails both - its fingers point left and its middle is extended.
+        p = hand.points
+        palm = hand.palm_size()
+
+        def rise(tip_id, mcp_id):   # >0 when the tip sits above its knuckle (points up)
+            return p[mcp_id].y - p[tip_id].y
+
+        def reach(tip_id, mcp_id):  # tip-to-knuckle distance (how extended the finger is)
+            dx, dy = p[tip_id].x - p[mcp_id].x, p[tip_id].y - p[mcp_id].y
+            return (dx * dx + dy * dy) ** 0.5
+
+        index_up = rise(8, 5) > config.TAB_UPRIGHT_RISE * palm
+        pinky_up = rise(20, 17) > config.TAB_UPRIGHT_RISE * 0.5 * palm  # pinky is shorter
+        middle_curled = reach(12, 9) < config.TAB_MIDDLE_CURL * palm
+        return index_up and pinky_up and middle_curled
 
     def reset(self):
         self._start = None

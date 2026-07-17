@@ -32,8 +32,8 @@ TRACKING_CONFIDENCE = 0.6
 # ---------------------------------------------------------------------------
 # Active frame region -> screen mapping (pixel margins from each camera edge)
 # ---------------------------------------------------------------------------
-FRAME_MARGIN_X = 170
-FRAME_MARGIN_Y = 120
+FRAME_MARGIN_X = 90
+FRAME_MARGIN_Y = 60
 
 # ---------------------------------------------------------------------------
 # Cursor movement / smoothing
@@ -71,8 +71,7 @@ SCROLL_MULTIPLIER = 1          # overall gain on the result (raise = faster)
 # ---------------------------------------------------------------------------
 # All palm-relative (fractions of wrist->knuckle span) so they hold at any distance.
 SWIPE_MIN_EXTEND = 0.55    # index/middle tip must be this far LEFT of its knuckle to count as pointing left
-SWIPE_MAX_VERTICAL = 0.8   # |vertical|/|horizontal| below this = the finger is horizontal, not up/down
-SWIPE_CURL_MAX = 0.75      # ring & pinky tip within this of their knuckle = curled (keeps a flat open hand out)
+SWIPE_MAX_VERTICAL = 1.0   # |vertical|/|horizontal| below this = the finger is horizontal-ish (allows a diagonal tilt)
 SWIPE_HOLD_TIME = 0.5      # seconds the pose must be held before Back fires (stops a split-second flash from triggering)
 
 # ---------------------------------------------------------------------------
@@ -88,6 +87,8 @@ FIST_CURL_MAX = 0.6        # every fingertip within this * palm of its knuckle =
 TAB_OPEN_TIME = 0.3        # seconds the rock sign must be held before the switcher opens
 TAB_SWIPE_RATIO = 0.5      # horizontal hand travel (as a fraction of palm span) to move one window
 TAB_RELEASE_GRACE = 0.15   # seconds the pose may vanish before committing (absorbs tracking blips so a flicker doesn't select early)
+TAB_UPRIGHT_RISE = 0.3     # index tip must sit this * palm ABOVE its knuckle: the rock sign points up, unlike the sideways "back" pose
+TAB_MIDDLE_CURL = 0.6      # middle fingertip within this * palm of its knuckle = curled in (rules out the extended-middle "back" pose)
 
 # ---------------------------------------------------------------------------
 # Paths

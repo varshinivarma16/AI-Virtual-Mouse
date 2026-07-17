@@ -19,6 +19,8 @@ from dataclasses import asdict, dataclass
 CAM_INDEX = 0
 CAM_WIDTH = 640
 CAM_HEIGHT = 480
+CAMERA_MAX_MISSES = 30  # consecutive failed frame reads before giving up (cameras
+                        # drop a few while warming up; don't quit on the first one)
 
 # ---------------------------------------------------------------------------
 # MediaPipe hand detection
@@ -55,9 +57,14 @@ RIGHT_CLICK_HOLD = 0.3        # hold three fingers up this long to right-click
 HOLD_GESTURE_TIME = 1.0       # open-palm hold time to toggle pause
 
 # ---------------------------------------------------------------------------
-# Output multipliers (raw gesture value -> OS units)
+# Scrolling (two fingers up, swiped vertically)
 # ---------------------------------------------------------------------------
-SCROLL_MULTIPLIER = 1         # scroll "clicks" per frame while two fingers are held up (raise = faster)
+# Holding the pose does nothing; the wheel follows how far the hand travels.
+SCROLL_NATURAL = True          # True: swipe up = drag the page up = go to the NEXT
+                               # video/post (phone-style). False: swipe up scrolls up.
+SCROLL_DEADZONE = 6.0          # px of vertical travel before a swipe counts (kills tremor)
+SCROLL_PIXELS_PER_NOTCH = 12.0 # px of hand travel per wheel notch (lower = more scroll per swipe)
+SCROLL_MULTIPLIER = 1          # overall gain on the result (raise = faster)
 
 # ---------------------------------------------------------------------------
 # Paths
@@ -75,10 +82,15 @@ WINDOW_NAME = "AI Virtual Mouse"
 
 @dataclass
 class Thresholds:
-    """Distance thresholds (in camera pixels) that calibration can tune."""
+    """Pinch thresholds that calibration can tune.
 
-    pinch: float = 40.0               # thumb+finger closer than this = a pinch (click)
-    double_click_pinch: float = 40.0  # index+middle tips this close = double-click pose
+    `pinch_ratio` is a FRACTION OF THE PALM, not a pixel count, so it holds up as
+    you lean toward or away from the camera. See PinchDetector for why.
+    """
+
+    pinch_ratio: float = 0.22         # thumb-index gap (/ palm span) that counts as touching
+    pinch_release: float = 1.6        # multiple of pinch_ratio the gap must exceed to un-pinch
+    double_click_pinch: float = 40.0  # index+middle tips this close (px) = double-click pose
 
     def save(self, path=CALIBRATION_FILE):
         with open(path, "w", encoding="utf-8") as f:

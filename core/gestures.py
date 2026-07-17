@@ -24,7 +24,9 @@ class Gesture(Enum):
     PINCH_END = auto()          # thumb+index released -> value = seconds held
     RIGHT_PINCH = auto()        # thumb+middle met (edge-triggered)
     TWO_FINGER_PINCH = auto()   # index+middle tips together (edge-triggered)
-    SCROLL = auto()             # two fingers up (index+middle) -> value = +1 (up)
+    SCROLL = auto()             # two fingers up (index+middle) swiped vertically ->
+                                # value = notches of HAND travel, signed (+ = hand up).
+                                # The action layer decides which way the page moves.
     PALM_HOLD = auto()          # open hand (four fingers up) held -> pause the video
 
 
@@ -47,7 +49,7 @@ class GestureEvent:
 
     gesture: Gesture
     point: Optional[Tuple[float, float]] = None
-    value: float = 0.0          # scroll direction (+1 up) or pinch-held seconds
+    value: float = 0.0          # signed scroll notches (+ = hand up) or pinch-held seconds
     hand_label: str = ""
 
 

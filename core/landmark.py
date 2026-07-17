@@ -14,6 +14,9 @@ from typing import List, Tuple
 TIP_IDS = [4, 8, 12, 16, 20]
 PIP_IDS = [3, 6, 10, 14, 18]
 
+_WRIST_ID = 0
+_MIDDLE_MCP_ID = 9  # knuckle at the base of the middle finger
+
 
 @dataclass
 class Landmark:
@@ -47,6 +50,20 @@ class HandLandmarks:
     def tip(self, finger: int) -> Landmark:
         """Fingertip landmark for finger 0..4 (thumb..pinky)."""
         return self.points[TIP_IDS[finger]]
+
+    def palm_size(self) -> float:
+        """Wrist-to-middle-knuckle distance, in camera pixels.
+
+        A yardstick for turning pixel distances into hand-relative ones. Raw pixels
+        are meaningless on their own: the same pinch measures ~40px near the camera
+        and ~15px an arm's length back, so a fixed pixel threshold silently becomes
+        a hair-trigger as you lean away. This span is a rigid bit of palm, so it
+        scales with distance while staying fixed as the fingers move.
+        """
+        wrist = self.points[_WRIST_ID]
+        mcp = self.points[_MIDDLE_MCP_ID]
+        size = ((wrist.x - mcp.x) ** 2 + (wrist.y - mcp.y) ** 2) ** 0.5
+        return max(size, 1e-6)  # never divide by zero on a degenerate hand
 
     def fingers_up(self) -> List[int]:
         """

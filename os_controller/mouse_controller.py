@@ -21,6 +21,7 @@ class MouseController:
         screen_w, screen_h = self.os.screen_size()
         self.mapper = CoordinateMapper(cam_w, cam_h, screen_w, screen_h)
         self._prev = (screen_w / 2, screen_h / 2)  # smoothed cursor position
+        self._scroll_residual = 0.0  # sub-notch scroll carried to the next frame
         self._log = get_logger()
         self._log.info(
             "MouseController ready (%s, screen %dx%d)",
@@ -52,6 +53,20 @@ class MouseController:
         self._prev = (cx, cy)
         return cx, cy
 
+    def _scroll(self, amount: float):
+        """Scroll by whole wheel notches, banking the fraction for the next frame.
+
+        The wheel only moves in whole notches, so rounding each frame in isolation
+        would throw away every swipe under half a notch - a slow, deliberate swipe
+        would emit SCROLL and move nothing. Carrying the remainder means the page
+        travels the distance the hand actually swept, however slowly it's swept.
+        """
+        self._scroll_residual += amount
+        notches = int(self._scroll_residual)  # truncates toward zero, so sign is kept
+        if notches:
+            self._scroll_residual -= notches
+            self.os.scroll(notches, self._prev)
+
     def execute(self, cmd: ActionCommand):
         a = cmd.action
 
@@ -64,7 +79,7 @@ class MouseController:
         elif a == Action.DOUBLE_CLICK:
             self.os.double_click()
         elif a == Action.SCROLL:
-            self.os.scroll(cmd.amount * config.SCROLL_MULTIPLIER, self._prev)
+            self._scroll(cmd.amount * config.SCROLL_MULTIPLIER)
         elif a == Action.MEDIA_PLAY_PAUSE:
             self.os.media_play_pause()
         elif a == Action.DRAG_START:

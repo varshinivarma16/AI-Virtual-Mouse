@@ -26,7 +26,12 @@ _INPUT_MOUSE = 0
 _MOUSEEVENTF_WHEEL = 0x0800
 _WHEEL_DELTA = 120  # one notch of the wheel
 
-_user32 = ctypes.windll.user32
+# A PRIVATE user32 handle. `ctypes.windll.user32` is a process-wide singleton whose
+# function objects are shared, so setting .argtypes on its SendInput would rebind the
+# very same object pynput calls - and pynput's INPUT struct would then be rejected
+# against our _INPUT, breaking every click in the app. WinDLL() builds a separate
+# instance with its own function cache, so our argtypes stay ours.
+_user32 = ctypes.WinDLL("user32")
 
 # ULONG_PTR isn't in wintypes; it's pointer-sized (8 bytes on x64, 4 on x86).
 _ULONG_PTR = ctypes.c_ulonglong if ctypes.sizeof(ctypes.c_void_p) == 8 else ctypes.c_ulong

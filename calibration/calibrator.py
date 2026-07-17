@@ -34,7 +34,9 @@ def run_calibration(cap, frames: int = 60) -> Thresholds:
         frame = cv2.flip(frame, 1)
         hands = tracker.find_hands(frame, draw=True)
         if len(hands) == 1:
-            d = distance(hands[0].tip(0).xy, hands[0].tip(1).xy)
+            # Sample the same palm-relative ratio the detector compares against,
+            # so the saved threshold survives you sitting closer or further back.
+            d = distance(hands[0].tip(0).xy, hands[0].tip(1).xy) / hands[0].palm_size()
             samples.append(d)
 
         cv2.putText(
@@ -53,12 +55,20 @@ def run_calibration(cap, frames: int = 60) -> Thresholds:
     thresholds = Thresholds.load()
     if samples:
         median = statistics.median(samples)
-        # threshold a bit above the measured pinch so a firm pinch reliably fires
-        thresholds.pinch = max(20.0, median * 1.8)
-        thresholds.double_click_pinch = thresholds.pinch
+        # A bit above the measured pinch so a firm pinch reliably fires, but capped:
+        # too generous a threshold is what makes the app click when you're merely
+        # holding your hand up, so never accept more than a third of the palm span.
+        thresholds.pinch_ratio = min(0.35, max(0.10, median * 1.5))
         thresholds.save()
-        log.info("calibration saved: pinch=%.1f (median=%.1f)", thresholds.pinch, median)
-        print(f"Saved: pinch threshold = {thresholds.pinch:.1f}px (median pinch {median:.1f}px)")
+        log.info(
+            "calibration saved: pinch_ratio=%.3f (median=%.3f of palm)",
+            thresholds.pinch_ratio,
+            median,
+        )
+        print(
+            f"Saved: pinch threshold = {thresholds.pinch_ratio:.3f} of palm span "
+            f"(median pinch {median:.3f})"
+        )
     else:
         print("No hand detected during calibration - keeping existing thresholds.")
         log.warning("calibration collected no samples")

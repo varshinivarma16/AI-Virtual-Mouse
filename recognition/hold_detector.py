@@ -29,7 +29,12 @@ class HoldDetector(BaseDetector):
         hand = hands[0]
         fingers = hand.fingers_up()
         four_up = fingers[1] and fingers[2] and fingers[3] and fingers[4]
-        if not four_up:
+        # An open palm means "stop" only when it's actually held UP. fingers_up is
+        # angle-independent by design, so without this an open hand lying sideways
+        # (a natural resting or mid-transition posture) reads as a palm and toggles
+        # your media after a second.
+        upright = hand.uprightness() >= config.PALM_MIN_UPRIGHT
+        if not (four_up and upright):
             self.reset()
             return None
 

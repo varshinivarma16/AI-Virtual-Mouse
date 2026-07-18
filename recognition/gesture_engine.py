@@ -67,7 +67,7 @@ class GestureEngine:
         # and wins on every ordinary pointing frame, so blocking on that would mean
         # never clicking at all.
         if winner_detector is not None and self._outranks_pinch(winner_detector):
-            self.pinch.block()
+            self.pinch.block(now)
 
         return winner if winner is not None else GestureEvent(Gesture.IDLE)
 

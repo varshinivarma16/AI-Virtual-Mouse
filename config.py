@@ -60,6 +60,18 @@ MOVE_SETTLE_FRAMES = 3        # freeze the cursor for this many frames after the
 # Timing (seconds)
 # ---------------------------------------------------------------------------
 CLICK_DEBOUNCE = 0.05         # min interval between clicks (low, so two quick pinches double-click)
+
+# ---------------------------------------------------------------------------
+# Click strictness (thumb+index pinch)
+# ---------------------------------------------------------------------------
+# A click is the one destructive gesture here - a wrong scroll is invisible, a wrong
+# click opens something. So the pinch is deliberately harder to trigger than it is
+# to recognise: it must look like a pinch, hold that shape, and not be the tail end
+# of some other gesture.
+PINCH_CONFIRM_FRAMES = 2      # consecutive frames the fingers must read as touching
+                              # before a click fires (a 1-frame tracking blip is not a click)
+PINCH_REQUIRE_MIDDLE_DOWN = True  # middle finger extended = you're posing (scroll/peace),
+                              # not clicking. Set False if you pinch with the middle up.
 RIGHT_CLICK_HOLD = 0.3        # hold three fingers up this long to right-click
 HOLD_GESTURE_TIME = 1.0       # open-palm hold time to toggle pause
 
@@ -72,6 +84,8 @@ SCROLL_NATURAL = True          # True: swipe up = drag the page up = go to the N
 SCROLL_DEADZONE = 6.0          # px of vertical travel before a swipe counts (kills tremor)
 SCROLL_PIXELS_PER_NOTCH = 12.0 # px of hand travel per wheel notch (lower = more scroll per swipe)
 SCROLL_MULTIPLIER = 1          # overall gain on the result (raise = faster)
+SCROLL_RELEASE_GRACE = 0.2     # seconds the scroll pose may flicker out before releasing the hand
+                               # (bridges mid-swipe flickers so they don't fall through to a stray click)
 
 # ---------------------------------------------------------------------------
 # "Back" gesture (index + middle held horizontal, pointing left)

@@ -30,6 +30,7 @@ class FingerScrollDetector(BaseDetector):
     def __init__(self):
         self._anchor_y = None  # y the current swipe is measured from (camera px)
         self._locked_dir = 0   # +1 up / -1 down: direction this hold is ratcheting
+        self._last_seen = None # when the scroll pose was last detected (for the grace)
 
     def detect(self, hands: List[HandLandmarks], ctx: DetectContext) -> Optional[GestureEvent]:
         if len(hands) != 1:
@@ -40,8 +41,16 @@ class FingerScrollDetector(BaseDetector):
         fingers = hand.fingers_up()
         # index + middle up, pinky down (thumb and ring ignored).
         if not (fingers[1] and fingers[2] and not fingers[4]):
+            # Mid-swipe the pose can flicker out for a frame (a finger dips, the hand
+            # tilts). If we were just scrolling, keep owning the hand for a short
+            # grace so that frame doesn't fall through to the pinch detector and fire
+            # a stray click. Once the grace lapses, really let go.
+            if self._last_seen is not None and (ctx.now - self._last_seen) < config.SCROLL_RELEASE_GRACE:
+                return self._idle(hand)
             self.reset()
             return None
+
+        self._last_seen = ctx.now
 
         # Track the midpoint of the two raised fingertips: steadier than either tip
         # alone, since the fingers splay slightly as the hand moves.
@@ -89,3 +98,4 @@ class FingerScrollDetector(BaseDetector):
     def reset(self):
         self._anchor_y = None
         self._locked_dir = 0  # dropping the pose is what frees the direction again
+        self._last_seen = None

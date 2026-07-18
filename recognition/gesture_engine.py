@@ -37,25 +37,42 @@ class GestureEngine:
         # The pointer gestures follow. The poses don't overlap: Back = fingers point
         # left, tab = index+pinky point up, scroll = index+middle point up, fist = all
         # curled.
+        self.pinch = PinchDetector()
         self.detectors = [
             SwipeLeftDetector(),
             TabSwitchDetector(),
             FistDetector(),
             FingerScrollDetector(),
             HoldDetector(),
-            PinchDetector(),
+            self.pinch,
             MoveDetector(),
         ]
 
     def process(self, hands: List[HandLandmarks], now: float, thresholds) -> GestureEvent:
         ctx = DetectContext(thresholds=thresholds, now=now)
         winner = None
+        winner_detector = None
         for detector in self.detectors:  # already in priority order
             event = detector.detect(hands, ctx)
             if event is not None and winner is None:
                 winner = event  # keep first (highest priority), but keep running
                 # the rest so their state stays fresh
+                winner_detector = detector
+
+        # Keeping the pinch's state fresh while a HIGHER-priority gesture wins is
+        # what let it click on release: it would arrive at the end of a scroll
+        # already pinched, and the next frame it owned would look like a fresh
+        # touch. Tell it it's out of the running instead, so a click has to start
+        # from open fingers. Only gestures above it count - MOVE sits below pinch
+        # and wins on every ordinary pointing frame, so blocking on that would mean
+        # never clicking at all.
+        if winner_detector is not None and self._outranks_pinch(winner_detector):
+            self.pinch.block()
+
         return winner if winner is not None else GestureEvent(Gesture.IDLE)
+
+    def _outranks_pinch(self, detector) -> bool:
+        return self.detectors.index(detector) < self.detectors.index(self.pinch)
 
     def reset(self):
         for detector in self.detectors:

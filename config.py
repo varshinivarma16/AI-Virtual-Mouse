@@ -30,6 +30,16 @@ DETECTION_CONFIDENCE = 0.7
 TRACKING_CONFIDENCE = 0.6
 
 # ---------------------------------------------------------------------------
+# Finger up/down reading
+# ---------------------------------------------------------------------------
+# Fingers are judged along the HAND's own axes (wrist -> knuckles), never the
+# screen's, so a pose reads the same upright, tilted, or fully sideways. See
+# HandLandmarks._axes for why that matters.
+FINGER_EXTEND_MARGIN = 0.05   # how far past its PIP joint a fingertip must reach, as a
+                              # fraction of palm span, to count as extended (small
+                              # dead-band so a borderline finger doesn't flicker)
+
+# ---------------------------------------------------------------------------
 # Active frame region -> screen mapping (pixel margins from each camera edge)
 # ---------------------------------------------------------------------------
 # The magenta box is the active region: it maps onto the whole screen. Each edge
@@ -72,8 +82,22 @@ PINCH_CONFIRM_FRAMES = 2      # consecutive frames the fingers must read as touc
                               # before a click fires (a 1-frame tracking blip is not a click)
 PINCH_REQUIRE_MIDDLE_DOWN = True  # middle finger extended = you're posing (scroll/peace),
                               # not clicking. Set False if you pinch with the middle up.
+PINCH_MIN_INDEX_REACH = 0.75  # index tip must sit this far from its own knuckle (in palm
+                              # spans) for a touch to count as a pinch. THE important one:
+                              # a relaxed hand curls the index tip down NEXT TO the thumb,
+                              # so tip-to-tip distance alone reads a resting hand as a
+                              # pinch. A deliberate pinch reaches the index out (~1.0+);
+                              # a curled one measures ~0.5.
+PINCH_BLOCK_COOLDOWN = 0.45   # seconds after another gesture owns the hand during which no
+                              # click can fire. Covers the return stroke between scroll
+                              # flicks, where the hand passes through pinch-like shapes on
+                              # its way back up.
 RIGHT_CLICK_HOLD = 0.3        # hold three fingers up this long to right-click
 HOLD_GESTURE_TIME = 1.0       # open-palm hold time to toggle pause
+PALM_MIN_UPRIGHT = 0.6        # how upright the open palm must be to count (1.0 = fingers
+                              # straight up, 0.0 = sideways); 0.6 allows ~50 degrees of
+                              # tilt. Without this, a hand lying sideways with the
+                              # fingers open reads as a palm and toggles your media.
 
 # ---------------------------------------------------------------------------
 # Scrolling (two fingers up, swiped vertically)

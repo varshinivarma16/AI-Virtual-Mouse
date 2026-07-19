@@ -52,6 +52,14 @@ FRAME_MARGIN_RIGHT = 80
 FRAME_MARGIN_TOP = 100
 FRAME_MARGIN_BOTTOM = 10
 
+# Cursor reach / gain. The box maps onto the screen, so normally your fingertip has
+# to touch a box EDGE to put the cursor on a screen edge - and the far corners of a
+# big box sit past a comfortable reach, so the cursor never gets there. Sensitivity
+# amplifies movement around the box CENTRE: at 1.3, covering the inner ~77% of the
+# box already sweeps the whole screen, so you hit every edge and corner with room to
+# spare. Raise it if the corners are still hard to reach; 1.0 = plain edge-to-edge.
+CURSOR_SENSITIVITY = 1.3
+
 # ---------------------------------------------------------------------------
 # Cursor movement / smoothing
 # ---------------------------------------------------------------------------

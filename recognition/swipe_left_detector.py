@@ -12,7 +12,7 @@ Like HoldDetector, the pose must be HELD for `SWIPE_HOLD_TIME` before it fires, 
 a split-second flash of horizontal fingers doesn't trigger Back. It then fires ONCE
 and stays quiet until you drop the pose. Throughout (both the wait and after firing)
 it returns a zero-value event so it *owns* the hand - a None here would fall through
-to pinch/move and misfire.
+to pinch/move and misfire.AAA
 
 Everything is measured RELATIVE TO THE PALM (`palm_size()`), not in pixels, so the
 thresholds hold whether your hand is near the camera or an arm's length back.

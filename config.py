@@ -50,7 +50,11 @@ FINGER_EXTEND_MARGIN = 0.05   # how far past its PIP joint a fingertip must reac
 FRAME_MARGIN_LEFT = 80
 FRAME_MARGIN_RIGHT = 80
 FRAME_MARGIN_TOP = 100
-FRAME_MARGIN_BOTTOM = 10
+FRAME_MARGIN_BOTTOM = 140  # was 10. Pointing puts your HAND below the fingertip, so a box
+                           # bottom near the frame edge forced the hand off-screen to reach
+                           # the screen bottom - tracking dropped and the cursor stuck. Lift
+                           # the box bottom well up so the fingertip hits it with the whole
+                           # hand still in view.
 
 # Cursor reach / gain. The box maps onto the screen, so normally your fingertip has
 # to touch a box EDGE to put the cursor on a screen edge - and the far corners of a
@@ -58,7 +62,7 @@ FRAME_MARGIN_BOTTOM = 10
 # amplifies movement around the box CENTRE: at 1.3, covering the inner ~77% of the
 # box already sweeps the whole screen, so you hit every edge and corner with room to
 # spare. Raise it if the corners are still hard to reach; 1.0 = plain edge-to-edge.
-CURSOR_SENSITIVITY = 1.3
+CURSOR_SENSITIVITY = 1.4
 
 # ---------------------------------------------------------------------------
 # Cursor movement / smoothing

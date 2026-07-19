@@ -129,10 +129,23 @@ FIST_CURL_MAX = 0.6        # every fingertip within this * palm of its knuckle =
 # ---------------------------------------------------------------------------
 # Hold the rock sign to open the switcher (Alt stays held); swipe left/right to move
 # the highlight; drop the pose to select. Distances are palm-relative.
-TAB_OPEN_TIME = 0.3        # seconds the rock sign must be held before the switcher opens
-TAB_SWIPE_RATIO = 0.5      # horizontal hand travel (as a fraction of palm span) to move one window
-TAB_RELEASE_GRACE = 0.15   # seconds the pose may vanish before committing (absorbs tracking blips so a flicker doesn't select early)
-TAB_UPRIGHT_RISE = 0.3     # index tip must sit this * palm ABOVE its knuckle: the rock sign points up, unlike the sideways "back" pose
+TAB_OPEN_TIME = 0.12       # seconds the rock sign must be held before the switcher opens.
+                           # Short on purpose: the switcher should appear as soon as you
+                           # show the sign. The pose is distinctive enough that it doesn't
+                           # need a long confirmation.
+TAB_SWIPE_RATIO = 0.6      # horizontal hand travel (as a fraction of palm span) to move one
+                           # window. Bigger = each window needs a more deliberate sweep.
+TAB_STEP_MIN_INTERVAL = 0.18  # min seconds between highlight moves. Hand travel decides HOW
+                           # FAR you go; this stops a fast sweep from firing several Tabs in
+                           # the same instant, faster than the switcher can redraw or you can
+                           # read it. Travel made during the wait is kept, not discarded.
+TAB_RELEASE_GRACE = 0.45   # seconds the pose may vanish before committing. Was 0.15 (~4
+                           # frames), which a fast sideways swipe blows straight through:
+                           # motion blur makes MediaPipe drop the hand for a few frames and
+                           # the switcher committed while the sign was still being held.
+TAB_MIN_UPRIGHT = 0.2      # how upright the hand must be (1.0 = fingers straight up, 0.0 =
+                           # sideways). Generous - it only rules out a hand lying on its
+                           # side; the rock sign itself now reads at any tilt.
 TAB_MIDDLE_CURL = 0.6      # middle fingertip within this * palm of its knuckle = curled in (rules out the extended-middle "back" pose)
 
 # ---------------------------------------------------------------------------

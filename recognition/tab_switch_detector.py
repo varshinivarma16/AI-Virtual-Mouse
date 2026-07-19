@@ -31,6 +31,7 @@ import config
 from core.gestures import Gesture, GestureEvent
 from core.landmark import HandLandmarks
 from recognition.base_detector import BaseDetector, DetectContext
+from utils.logging_setup import get_logger
 
 
 class TabSwitchDetector(BaseDetector):
@@ -39,10 +40,22 @@ class TabSwitchDetector(BaseDetector):
         self._opened = False       # is the switcher open (Alt held)?
         self._anchor_x = None      # x the current swipe is measured from (camera px)
         self._absent_since = None  # when the pose first went missing (for the grace)
+        self._last_step = 0.0      # when the highlight last moved (paces the stepping)
+        self._log = get_logger()
 
     def detect(self, hands: List[HandLandmarks], ctx: DetectContext) -> Optional[GestureEvent]:
         if len(hands) == 1 and self._is_rock(hands[0]):
             return self._pose_held(hands[0], ctx)
+        if self._opened and self._absent_since is None:
+            # Why the pose was lost, logged once per dropout. A switcher that closes
+            # while you're still holding the sign is either the hand vanishing from
+            # tracking (motion blur on a fast swipe) or the shape failing - and the
+            # two want opposite fixes, so don't guess: look here.
+            self._log.debug(
+                "tab: pose lost (hands=%d, shape_ok=%s)",
+                len(hands),
+                self._is_rock(hands[0]) if len(hands) == 1 else "n/a",
+            )
         return self._pose_gone(ctx)
 
     def _pose_held(self, hand: HandLandmarks, ctx: DetectContext) -> GestureEvent:
@@ -63,7 +76,14 @@ class TabSwitchDetector(BaseDetector):
         step = config.TAB_SWIPE_RATIO * hand.palm_size()
         dx = x - self._anchor_x
         if abs(dx) >= step:
+            if (ctx.now - self._last_step) < config.TAB_STEP_MIN_INTERVAL:
+                # Too soon since the last move. Hold the anchor rather than
+                # re-anchoring, so this travel isn't thrown away - it lands as a step
+                # the moment the interval is up. A fast sweep still crosses several
+                # windows, it just does it at a readable pace instead of all at once.
+                return GestureEvent(Gesture.TAB_HOLD, hand_label=hand.label)
             self._anchor_x = x
+            self._last_step = ctx.now
             gesture = Gesture.TAB_NEXT if dx > 0 else Gesture.TAB_PREV
             return GestureEvent(gesture, hand_label=hand.label)
         return GestureEvent(Gesture.TAB_HOLD, hand_label=hand.label)  # holding; own the hand
@@ -82,29 +102,24 @@ class TabSwitchDetector(BaseDetector):
 
     @staticmethod
     def _is_rock(hand: HandLandmarks) -> bool:
-        # Fully geometric, NOT fingers_up() - that assumes an upright hand and returns
-        # scrambled results on a sideways hand, which is exactly how the horizontal
-        # "back" pose used to leak through as a rock sign. Instead:
-        #   * index & pinky point UP  (tip clearly above its knuckle)
-        #   * middle is CURLED in     (tip close to its knuckle)
-        # The back pose fails both - its fingers point left and its middle is extended.
-        p = hand.points
-        palm = hand.palm_size()
-
-        def rise(tip_id, mcp_id):   # >0 when the tip sits above its knuckle (points up)
-            return p[mcp_id].y - p[tip_id].y
-
-        def reach(tip_id, mcp_id):  # tip-to-knuckle distance (how extended the finger is)
-            dx, dy = p[tip_id].x - p[mcp_id].x, p[tip_id].y - p[mcp_id].y
-            return (dx * dx + dy * dy) ** 0.5
-
-        index_up = rise(8, 5) > config.TAB_UPRIGHT_RISE * palm
-        pinky_up = rise(20, 17) > config.TAB_UPRIGHT_RISE * 0.5 * palm  # pinky is shorter
-        middle_curled = reach(12, 9) < config.TAB_MIDDLE_CURL * palm
-        return index_up and pinky_up and middle_curled
+        # Measured along the HAND's own axes, not the screen's. This used to compare
+        # raw screen y ("is the tip higher up the image than its knuckle"), which
+        # quietly gets stricter the more the hand rotates - and the hand DOES rotate,
+        # because sweeping sideways to move the highlight tilts it. Past roughly 70
+        # degrees the sign stopped registering mid-swipe and the switcher committed
+        # on its own. `fingers_up`/`reach` are angle-independent, so the sign reads
+        # the same however you hold it:
+        #   * index & pinky EXTENDED
+        #   * middle CURLED in
+        # The "back" pose fails on the middle finger, which it holds extended.
+        fingers = hand.fingers_up()
+        middle_curled = hand.reach(2) < config.TAB_MIDDLE_CURL
+        upright = hand.uprightness() >= config.TAB_MIN_UPRIGHT
+        return bool(fingers[1] and fingers[4]) and middle_curled and upright
 
     def reset(self):
         self._start = None
         self._opened = False
         self._anchor_x = None
         self._absent_since = None
+        self._last_step = 0.0

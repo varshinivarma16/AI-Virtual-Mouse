@@ -25,6 +25,19 @@ class CoordinateMapper:
         x, y = point
         left, right = config.FRAME_MARGIN_LEFT, config.FRAME_MARGIN_RIGHT
         top, bottom = config.FRAME_MARGIN_TOP, config.FRAME_MARGIN_BOTTOM
-        sx = np.interp(x, (left, self.cam_w - right), (0, self.screen_w))
-        sy = np.interp(y, (top, self.cam_h - bottom), (0, self.screen_h))
+
+        # Where the point sits inside the box, 0..1 on each axis.
+        nx = np.interp(x, (left, self.cam_w - right), (0.0, 1.0))
+        ny = np.interp(y, (top, self.cam_h - bottom), (0.0, 1.0))
+
+        # Amplify around the centre (0.5) so a comfortable inner range of hand
+        # movement reaches the screen edges - you don't have to stretch your
+        # fingertip all the way to the box corner to hit a screen corner. Clamped
+        # below, so overshooting past an edge just pins the cursor there.
+        g = config.CURSOR_SENSITIVITY
+        nx = 0.5 + (nx - 0.5) * g
+        ny = 0.5 + (ny - 0.5) * g
+
+        sx = nx * self.screen_w
+        sy = ny * self.screen_h
         return clamp(sx, 0, self.screen_w - 1), clamp(sy, 0, self.screen_h - 1)
